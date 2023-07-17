@@ -1,0 +1,21 @@
+% Crime rate.
+?::burglary.
+% Daily earthquake probabilities.
+0.05::earthquake(heavy); 0.15::earthquake(mild); 0.8::earthquake(none).
+% Error rates.
+0.90::alarm :- burglary, earthquake(heavy).
+0.85::alarm :- burglary, earthquake(mild).
+0.80::alarm :- burglary, earthquake(none).
+0.05::alarm :- not burglary, earthquake(mild).
+0.10::alarm :- not burglary, earthquake(heavy).
+% Help of neighbors.
+0.8::calls(X) :- alarm, neighbor(X).
+0.1::calls(X) :- not alarm, neighbor(X).
+% Bert and Ernie are Elmo's neighbors.
+neighbor(bert). neighbor(ernie).
+% What is the probability of a burglary at Elmo's?
+#query burglary.
+% We learn from a CSV containing Bert and Ernie's calls.
+#learn "https://www.ime.usp.br/~renatolg/dpasp/elmo.csv", niters = 10.
+% Select the max-ent semantics.
+#semantics maxent.
