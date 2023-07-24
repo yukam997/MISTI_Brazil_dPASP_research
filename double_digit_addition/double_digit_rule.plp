@@ -1,0 +1,101 @@
+#python
+import torch
+from torch import nn
+from PIL import Image
+from torch.utils.data import Dataset
+from torchvision import datasets
+from torchvision.transforms import ToTensor
+import numpy as numpy
+import os
+import pandas as pd
+import torchvision.transforms.functional as TF
+
+class CustomImageDataset(Dataset):
+    def __init__(self, annotations_file, img_dir, transform=None, target_transform=None):
+        self.img_labels = pd.read_csv(annotations_file,header = None)
+        self.img_dir = img_dir
+        self.transform = transform
+        self.target_transform = target_transform
+
+    def __len__(self):
+        return len(self.img_labels)
+
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
+        image = Image.open(img_path)
+        image = TF.to_tensor(image)
+        label = self.img_labels.iloc[idx, 1]
+        if self.transform:
+            image = self.transform(image)
+        if self.target_transform:
+            label = self.target_transform(label)
+        return image, label
+
+device = (
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps"
+    if torch.backends.mps.is_available()
+    else "cpu"
+)
+
+test_data = CustomImageDataset(
+    annotations_file ="double_digit_execution/data/test_labels_small.csv",
+    img_dir = "double_digit_execution/data/test_data_small",
+)
+training_data = CustomImageDataset(
+    annotations_file ="double_digit_execution/data/train_labels_small.csv",
+    img_dir = "double_digit_execution/data/train_data_small"
+)
+class NeuralNetwork(nn.Module):  
+    def __init__(self):
+        super().__init__()
+        self.flatten = nn.Flatten()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(28*56, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 100)
+        )
+
+    def forward(self, x):
+        x = self.flatten(x)
+        logits = self.linear_relu_stack(x)
+        return logits
+
+def digit_net(): return NeuralNetwork()
+
+def give_to_pasp(stringID):
+    ID_to_str = {
+        1:"test_img",
+        2:"train_img",
+    }
+    str = ID_to_str[stringID]
+    if str == "test_img":
+        return torch.from_numpy(numpy.array([img.numpy() for img, label in test_data]))
+    elif str == "train_img":
+        return torch.from_numpy(numpy.array([img.numpy() for img, label in training_data]))
+    print("unexpected argument")
+    return None
+
+def train_labels():
+    return [[f"sum({label *2})"] for img, label in training_data]
+#end.
+
+% Data of the first digit.
+input(first) ~ test(@give_to_pasp(1)), train(@give_to_pasp(2)).
+% Data of the second digit.
+input(second) ~ test(@give_to_pasp(1)), train(@give_to_pasp(2)).
+
+% Neural annotated disjunction over each digit from 0 to 99; use Adam as optimizer
+% and a learning rate of 0.001.
+?::number(X, {0..99}) as @digit_net with optim = "Adam", lr = 0.001 :- input(X).
+% The sum.
+sum(Z) :- digit(first, X), digit(second, Y), Z = X+Y.
+
+% Learn the parameters of the program from the "sum(X)" atoms.
+#learn @train_labels, lr = 1., niters = 1, alg = "lagrange", batch = 500.
+% Ask for the probability of all groundings of sum(X).
+#query sum(X).
+#semantics maxent.
