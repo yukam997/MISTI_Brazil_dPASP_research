@@ -1,3 +1,7 @@
+<style>
+blue { color: blue }
+yellow { color: yellow }
+</style>
 # MISTI_Brazil_dPASP_research
 
 ## Types of Experiments
