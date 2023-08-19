@@ -2,7 +2,9 @@
 
 ## Types of Experiments
 Each task has several variations regarding the task, or the input to the algorithm. Some variations are just for the pure neural network approach, while other variations are just for the dPASP approach.
-### Three Digits
+
+### For dPASP
+#### Three Digits
 There are three digits, and the task is to guess the last digit. The first two digits should.
 
 three_digits.plp - three images of digits are fed in, and nn guesses a number between 0-9. The pasp code guesses the last digit.
@@ -11,9 +13,9 @@ three_digit_implicit.plp - same as above except for test time. The training is d
 
 pretrained_three_digits.plp - exactly the same as three_digits.plp except instead of training through dpasp, downloads a pretrained model (mnist_net.pth) to identify mnist digits. You can train this yourself separately, or download a pretrained model from the internet.
 
-### Guess Equal Row Sum or Equal Column Sum
+#### Guess Equal Row Sum or Equal Column Sum
 
-### Five Digits
+#### Five Digits
 There are three digits, and the task is to guess the last digit. The first two digits should sum (or differ) to the same number as the second two. The difficulty is that this takes too long for exact inference.
 
 five_digit.plp - five images of digits are fed in, and nn guesses a number between 0-9. The pasp code guesses the last digit.
@@ -23,6 +25,24 @@ guess_operation.plp - same as five_digit.plp except the logic part also has to g
 mod3_guess_op.plp - The variation here is that the pair have equal sums or differences modulo 3. The logic program also has to guess whether it is a sum or a difference.
 
 pretrained_five_digits.plp - pretrained version of five_digit.plp just as in pretrained_three_digits.plp
+
+### For Neural Nets
+- for more details, read the mns_dataloaders.py and mns_models.py files.
+#### Three Digits
+- three_channels - three channels, each an images of 28*28 are fed-in. The nn outputs the guess of the last.
+- two_concat - The model has two channels. The first channel is dim 28x64 which shows one digit on the top and one on the bottom concatenated with 8 line gap in between. The second image is a digit on the top and a blank on the bottom. The task is to guess the last digit. (what goes in the bottom)
+<span style="color:green;font-weight:700;font-size:20px">
+- two_concat_biased - same as two_concat except for the train and test data. The train data are numbers that sum to between (0,10) and the test are (8,18).
+</span>
+
+#### Five Digits
+- five_channels - same as three_channels but for five digits case.
+- five_concat - five digits are concatenated to form 2x140 image. The neural output is a guess of the last digit.
+<span style="color:green;font-weight:700;font-size:20px">
+- guess_opp - stil implementing, but should correspond to mod3_guess_op.plp. We want to make the train and test data different, where for training it is always the sum operator, but for test, the operator is sum and dif with equal probability.
+</span>
+#### Guess Equal Row Sum or Equal Column Sum
+- four_gathered - four images of dimension 28x28 are concatenated to make an image of dim 56*56. Either each row sums up to an equal number, or each column sums up to an equal number. The algorithm outputs a length two vector with confidence of "row" vs "column".
 
 ## File types
 ### For Neural Net approach
