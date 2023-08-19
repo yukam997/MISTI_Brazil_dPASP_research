@@ -1,6 +1,6 @@
 <style>
-blue { "color: blue" }
-yellow { "color: yellow" }
+blue { color: blue }
+yellow { color: yellow }
 </style>
 # MISTI_Brazil_dPASP_research
 
@@ -36,14 +36,14 @@ pretrained_five_digits.plp - pretrained version of five_digit.plp just as in pre
 #### Three Digits
 - three_channels - three channels, each an images of 28*28 are fed-in. The nn outputs the guess of the last.
 - two_concat - The model has two channels. The first channel is dim 28x64 which shows one digit on the top and one on the bottom concatenated with 8 line gap in between. The second image is a digit on the top and a blank on the bottom. The task is to guess the last digit. (what goes in the bottom)
-- <blue> two_concat_biased - same as two_concat except for the train and test data. The train data are numbers that sum to between (0,10) and the test are (8,18). </blue>
+- **two_concat_biased - same as two_concat except for the train and test data. The train data are numbers that sum to between (0,10) and the test are (8,18).**
 
 #### Five Digits
 - five_channels - same as three_channels but for five digits case.
 - five_concat - five digits are concatenated to form 2x140 image. The neural output is a guess of the last digit.
-- <blue> guess_opp - stil implementing, but should correspond to mod3_guess_op.plp. We want to make the train and test data different, where for training it is always the sum operator, but for test, the operator is sum and dif with equal probability.</blue>
+- **guess_opp - stil implementing, but should correspond to mod3_guess_op.plp. We want to make the train and test data different, where for training it is always the sum operator, but for test, the operator is sum and dif with equal probability.**
 #### Guess Equal Row Sum or Equal Column Sum
-- four_gathered - four images of dimension 28x28 are concatenated to make an image of dim 56*56. Either each row sums up to an equal number, or each column sums up to an equal number. The algorithm outputs a length two vector with confidence of "row" vs "column".
+- four_gathered - four images of dimension 28x28 are concatenated to make an image of dim 56x56. Either each row sums up to an equal number, or each column sums up to an equal number. The algorithm outputs a length two vector with confidence of "row" vs "column".
 
 ## File types
 ### For Neural Net approach
