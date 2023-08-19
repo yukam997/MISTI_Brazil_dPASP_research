@@ -4,6 +4,7 @@
 Each task has several variations regarding the task, or the input to the algorithm. Some variations are just for the pure neural network approach, while other variations are just for the dPASP approach.
 
 ### For dPASP
+
 #### Three Digits
 There are three digits, and the task is to guess the last digit. The first two digits should.
 
