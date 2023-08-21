@@ -1,7 +1,3 @@
-<style>
-blue { color: blue }
-yellow { color: yellow }
-</style>
 # MISTI_Brazil_dPASP_research
 
 ## Types of Experiments
@@ -10,26 +6,26 @@ Each task has several variations regarding the task, or the input to the algorit
 ### For dPASP
 
 #### Three Digits
-There are three digits, and the task is to guess the last digit. The first two digits should.
+- There are three digits, and the task is to guess the last digit. The first two digits should.
 
-three_digits.plp - three images of digits are fed in, and nn guesses a number between 0-9. The pasp code guesses the last digit.
+- three_digits.plp - three images of digits are fed in, and nn guesses a number between 0-9. The pasp code guesses the last digit.
 
-three_digit_implicit.plp - same as above except for test time. The training is done by giving the algorithm the ground truth of the last digit, but the test is checking the accuracy of identifying the first digit.
+- three_digit_implicit.plp - same as above except for test time. The training is done by giving the algorithm the ground truth of the last digit, but the test is checking the accuracy of identifying the first digit.
 
-pretrained_three_digits.plp - exactly the same as three_digits.plp except instead of training through dpasp, downloads a pretrained model (mnist_net.pth) to identify mnist digits. You can train this yourself separately, or download a pretrained model from the internet.
+- pretrained_three_digits.plp - exactly the same as three_digits.plp except instead of training through dpasp, downloads a pretrained model (mnist_net.pth) to identify mnist digits. You can train this yourself separately, or download a pretrained model from the internet.
 
 #### Guess Equal Row Sum or Equal Column Sum
 
 #### Five Digits
 There are three digits, and the task is to guess the last digit. The first two digits should sum (or differ) to the same number as the second two. The difficulty is that this takes too long for exact inference.
 
-five_digit.plp - five images of digits are fed in, and nn guesses a number between 0-9. The pasp code guesses the last digit.
+- five_digit.plp - five images of digits are fed in, and nn guesses a number between 0-9. The pasp code guesses the last digit.
 
-guess_operation.plp - same as five_digit.plp except the logic part also has to guess whether the operation that is equal between the pairs is a multiplication, subtraction or addition (could also try adding modulo as a possible operation). 
+- guess_operation.plp - same as five_digit.plp except the logic part also has to guess whether the operation that is equal between the pairs is a multiplication, subtraction or addition (could also try adding modulo as a possible operation). 
 
-mod3_guess_op.plp - The variation here is that the pair have equal sums or differences modulo 3. The logic program also has to guess whether it is a sum or a difference.
+- mod3_guess_op.plp - The variation here is that the pair have equal sums or differences modulo 3. The logic program also has to guess whether it is a sum or a difference.
 
-pretrained_five_digits.plp - pretrained version of five_digit.plp just as in pretrained_three_digits.plp
+- pretrained_five_digits.plp - pretrained version of five_digit.plp just as in pretrained_three_digits.plp
 
 ### For Neural Nets
 - for more details, read the mns_dataloaders.py and mns_models.py files.
