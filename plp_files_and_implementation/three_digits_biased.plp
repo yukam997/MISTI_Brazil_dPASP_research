@@ -1,0 +1,148 @@
+#python
+import torch
+import torchvision
+import random
+
+NUM_RANGE = (0,9)
+import torch.nn as nn
+import torch.nn.functional as F
+
+# Digit classification network definition.
+class Net(torch.nn.Module):
+  def __init__(self):
+    super().__init__()
+    self.encoder = torch.nn.Sequential(
+      torch.nn.Conv2d(1, 6, 5),
+      torch.nn.MaxPool2d(2, 2),
+      torch.nn.ReLU(True),
+      torch.nn.Conv2d(6, 16, 5),
+      torch.nn.MaxPool2d(2, 2),
+      torch.nn.ReLU(True)
+    )
+    self.classifier = torch.nn.Sequential(
+      torch.nn.Linear(16 * 4 * 4, 120),
+      torch.nn.ReLU(),
+      torch.nn.Linear(120, 84),
+      torch.nn.ReLU(),
+      torch.nn.Linear(84, 10),
+      torch.nn.Softmax(1)
+    )
+
+  def forward(self, x):
+    x = self.encoder(x)
+    x = x.view(-1, 16 * 4 * 4)
+    x = self.classifier(x)
+    return x
+
+# Return an instance of Net.
+def digit_net(): 
+    return Net()
+
+
+transform = torchvision.transforms.Compose(
+    [torchvision.transforms.ToTensor(),
+     torchvision.transforms.Normalize((0.5), (0.5))])
+
+# Download training data from open datasets.
+training_data_atoms = torchvision.datasets.MNIST(
+    root="data",
+    train=True,
+    download=True,
+    transform=transform,
+)
+
+# Download test data from open datasets.
+test_data_atoms = torchvision.datasets.MNIST(
+    root="data",
+    train=False,
+    download=True,
+    transform=transform,
+)
+
+test_digits= [[] for i in range(10)]
+for img, label in test_data_atoms:
+    test_digits[label]+=img
+train_digits= [[] for i in range(10)]
+for img, label in training_data_atoms:
+    train_digits[label]+=img
+
+def generate_num_set(n):
+    small = max(n-NUM_RANGE[1],0)
+    big = min(NUM_RANGE[1],n - small)
+    num1 = random.randint(small,big)
+    num2 = random.randint(small,big)
+    return (num1,n-num1,num2,n-num2)
+
+def generate_train_data_point(numbers):
+    data_point = [random.choice(train_digits[numbers[i]])[None,:,:] for i in range(3)]
+    return data_point+[numbers[3]]
+
+def generate_test_data_point(numbers):
+    data_point = [random.choice(test_digits[numbers[i]])[None,:,:] for i in range(3)]
+    return data_point+[numbers[3]]
+
+training_data=[]
+training_data_digit=[]
+for i in range(100000):
+    total = random.randint(0,10)
+    num = generate_num_set(total)
+    training_data_digit +=[(num[0],num[1],num[2])]
+    training_data += [generate_train_data_point(num)]
+    
+test_data=[]
+for i in range(1000):
+    total = random.randint(8,18)
+    num = generate_num_set(total)
+    test_data += [generate_test_data_point(num)]
+
+# MNIST images for the train set.
+def mnist_images_train(num):
+  return torch.cat([training_data[i][int(num)] for i in range(len(training_data))])[:,None,:,:]
+# MNIST images for the test set.
+def mnist_images_test(num): 
+  with open("debug.csv",'w',newline = '') as csvfile:
+    csvwriter = csv.writer(csvfile)
+    csvwriter.writerow(["test",torch.cat([test_data[i][int(num)] for i in range(len(test_data))])[:,None,:,:].shape]) 
+  return torch.cat([test_data[i][int(num)] for i in range(len(test_data))])[:,None,:,:]
+# Observed atoms for training.
+#def mnist_labels_train():
+#  # We join the two halves (top and bottom) of MNIST and join them together to get
+#  # two digits side by side. The labels are atoms encoding the sum of the two digits.
+# return [[f"digit(0,{a})",f"digit(1,{b})",f"digit(2,{a})"] for a,b,c in training_data_digit]
+def mnist_labels_train():
+  # We join the two halves (top and bottom) of MNIST and join them together to get
+  # two digits side by side. The labels are atoms encoding the sum of the two digits.
+  labels = [training_data[i][-1] for i in range(len(training_data))]
+  return [[f"last_num({x})"] for x in labels]
+
+# keep labels for test data
+import csv
+def note_label_for_test(test_data):
+  with open("short_sum_label.csv",'w',newline = '') as csvfile:
+    csvwriter = csv.writer(csvfile)
+    for i in range(len(test_data)):
+      csvwriter.writerow([test_data[i][-1]]) 
+note_label_for_test(test_data)
+
+#end.
+
+% Data of the first digit.
+input(0) ~ test(@mnist_images_test(0)), train(@mnist_images_train(0)).
+% Data of the second digit.
+input(1) ~ test(@mnist_images_test(1)), train(@mnist_images_train(1)).
+% Data of the third digit.
+input(2) ~ test(@mnist_images_test(2)), train(@mnist_images_train(2)).
+
+
+% Neural annotated disjunction over each digit from 0 to 9; use Adam as optimizer
+% and a learning rate of 0.001.
+?::digit(X, {0..9}) as @digit_net with optim = "Adam", lr = 0.001 :- input(X).
+% The sum.
+
+sum1(X) :- digit(0, A), digit(1, B), X = A+B.
+last_num(L):- digit(2,A),sum1(X),L=X-A.
+
+#semantics maxent.
+% Ask for the probability of all groundings of last_num(L).
+#learn @mnist_labels_train, lr = 1., niters = 5, alg = "lagrange", batch = 500.
+#query last_num(L).
