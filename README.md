@@ -12,6 +12,8 @@ Each task has several variations regarding the task, or the input to the algorit
 
 - three_digit_implicit.plp - same as above except for test time. The training is done by giving the algorithm the ground truth of the last digit, but the test is checking the accuracy of identifying the first digit.
 
+- three_digits_biased.plp - same as three_digits.plp except for the distribution of training and test set. For training, the digits sum to between 0 and 10, and the digits sum to 8-18 for test.
+
 - pretrained_three_digits.plp - exactly the same as three_digits.plp except instead of training through dpasp, downloads a pretrained model (mnist_net.pth) to identify mnist digits. You can train this yourself separately, or download a pretrained model from the internet.
 
 #### Guess Equal Row Sum or Equal Column Sum
@@ -24,6 +26,8 @@ There are three digits, and the task is to guess the last digit. The first two d
 - guess_operation.plp - same as five_digit.plp except the logic part also has to guess whether the operation that is equal between the pairs is a multiplication, subtraction or addition (could also try adding modulo as a possible operation). 
 
 - mod3_guess_op.plp - The variation here is that the pair have equal sums or differences modulo 3. The logic program also has to guess whether it is a sum or a difference.
+
+- mod3_guess_op_biased.plp - Same as mod3_guess_op, but the training set is only "sum", while the test set contains both "sum" and "dif" cases.
 
 - pretrained_five_digits.plp - pretrained version of five_digit.plp just as in pretrained_three_digits.plp
 
