@@ -1,11 +1,18 @@
 # MISTI_Brazil_dPASP_research
+Explanation of folders/files in root directory (plp_files_and_implementation and pure_nn_approach are directly useful, and the other two are more for reference):
+- plp_files_and_implementation: all the experiments that I have created during this internship
+- pure_nn_approach: all neural networks that correspond to the tasks that the plp files.
+- useful_python_code: general code to help make neural networks.
+- pasp_examples: examples from dpasp tutorial that helped me write my plp files.
+- model.pth: example of how to save models to use in pretrained____.plp files
+- 
 
 ## Types of Experiments
 Each task has several variations regarding the task, or the input to the algorithm. Some variations are just for the pure neural network approach, while other variations are just for the dPASP approach.
 
-### For dPASP
+### For dPASP 
 
-#### Three Digits
+#### Three Digits 
 - There are three digits, and the task is to guess the last digit. The first two digits should.
 
 - three_digits.plp - three images of digits are fed in, and nn guesses a number between 0-9. The pasp code guesses the last digit.
