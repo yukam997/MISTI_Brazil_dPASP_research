@@ -34,12 +34,13 @@ class Net(torch.nn.Module):
 
 # Return an instance of Net.
 def digit_net(): return Net()
-# Download training data from open datasets.
+
+# Function to transform the dataset
 transform = torchvision.transforms.Compose(
     [torchvision.transforms.ToTensor(),
      torchvision.transforms.Normalize((0.5), (0.5))])
 
-
+# Download training data from open datasets.
 training_data_atoms = torchvision.datasets.MNIST(
     root="data",
     train=True,
@@ -55,15 +56,15 @@ test_data_atoms = torchvision.datasets.MNIST(
     transform=transform,
 )
 
-test_digits= [[] for i in range(10000)]
+test_digits= [[] for i in range(10)] # the digits can be one of 0,1,..9. Each array will store images of each separate digit.
 for img, label in test_data_atoms:
     test_digits[label]+=img
-print("test_digit = 10000")
-train_digits= [[] for i in range(100)]
+
+train_digits= [[] for i in range(10)]
 for img, label in training_data_atoms:
     train_digits[label]+=img
 
-def generate_num_set(n):
+def generate_num_set(n): # given what the sum of each pair should be, this outputs a set of 6 numbers where each pair adds up to the sum.
     small = max(n-NUM_RANGE[1],0)
     big = min(NUM_RANGE[1],n - small)
     num1 = random.randint(small,big)
@@ -73,21 +74,21 @@ def generate_num_set(n):
 
 def generate_train_data_point(numbers):
     data_point = [random.choice(train_digits[numbers[i]])[None,:,:] for i in range(5)]
-    return data_point+[numbers[5]]
+    return data_point+[numbers[5]] # generates training data where each training point consists of 5 images of digits, and the last is an integer which the algorithm should guess.
 
 def generate_test_data_point(numbers):
     data_point = [random.choice(test_digits[numbers[i]])[None,:,:] for i in range(5)]
-    return data_point+[numbers[5]]
+    return data_point+[numbers[5]] # generates test data in a similar way to training data.
 
 training_data=[]
-for i in range(10):
-    total = random.randint(4,16)
+for i in range(1000):
+    total = random.randint(3,15) # The total sum of the two digits is set to be between 3 and 15. (If we allow 0 or 1, it will be very boring because all the numbers will be 0 or 1 in this case.)
     num = generate_num_set(total)
     training_data += [generate_train_data_point(num)]
     
 test_data=[]
 for i in range(10):
-    total = random.randint(4,16)
+    total = random.randint(3,15)
     num = generate_num_set(total)
     test_data += [generate_test_data_point(num)]
 
@@ -101,20 +102,23 @@ def mnist_images_test(num):
     csvwriter = csv.writer(csvfile)
     csvwriter.writerow(["test",torch.cat([test_data[i][int(num)] for i in range(len(test_data))])[:,None,:,:].shape]) 
   return torch.cat([test_data[i][int(num)] for i in range(len(test_data))])[:,None,:,:]
+
 # Observed atoms for training.
 def mnist_labels_train():
-  # We join the two halves (top and bottom) of MNIST and join them together to get
-  # two digits side by side. The labels are atoms encoding the sum of the two digits.
+  # we observe the labels for the data, which is the last number the system should predict. 
+  # we also observe that the sum of the first pair is the same as the sum of the second pair. This is assumed in the data that we feed the model, but te model needs to learn that this is always true.
   labels = [training_data[i][-1] for i in range(len(training_data))]
   return [[f"last_num({x})","equal"] for x in labels]
 
 # keep labels for test data
 import csv
-def note_label_for_test(test_data):
+def note_label_for_test(test_data): # we write the ground truth of predicted values for the test set, so that it can be opened when running implement_dpasp.py to test accuracy.
   with open("label.csv",'w',newline = '') as csvfile:
     csvwriter = csv.writer(csvfile)
     for i in range(len(test_data)):
       csvwriter.writerow([test_data[i][-1]]) 
+
+# run the function to write the ground truth in label.csv
 note_label_for_test(test_data)
 
 #end.
@@ -133,8 +137,8 @@ input(4) ~ test(@mnist_images_test(4)), train(@mnist_images_train(4)).
 % Neural annotated disjunction over each digit from 0 to 9; use Adam as optimizer
 % and a learning rate of 0.001.
 ?::digit(X, {0..9}) as @digit_net with optim = "Adam", lr = 0.001 :- input(X).
-% The sum.
 
+% Probability of the sum.
 sum1(X) :- digit(0, A), digit(1, B), X = A+B.
 sum2(Y) :- digit(2, A), digit(3, B), Y = A+B.
 equal:- sum1(X),sum2(Y),X=Y.
@@ -143,5 +147,5 @@ last_num(L):- digit(4,A),sum1(X),L=X-A.
 % Learn the parameters of the program from the "sum(X)" atoms.
 #learn @mnist_labels_train, lr = 1., niters = 5, alg = "lagrange", batch = 10.
 #semantics maxent.
-% Ask for the probability of all groundings of last_num(L).
+% Ask for the probability of all groundings of last_num(L) given equal.
 #query last_num(L)|equal.
