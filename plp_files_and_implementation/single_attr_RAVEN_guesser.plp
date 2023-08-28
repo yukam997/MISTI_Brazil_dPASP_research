@@ -1,0 +1,138 @@
+#python
+
+import torch
+import torchvision
+import random
+import os
+import numpy as np
+
+# Digit classification network definition.
+class Net(torch.nn.Module):
+  def __init__(self):
+    super().__init__()
+    self.encoder = torch.nn.Sequential(
+      torch.nn.MaxPool2d(2, 2),
+      torch.nn.Conv2d(1, 6, 5),
+      torch.nn.MaxPool2d(2, 2),
+      torch.nn.ReLU(True),
+      torch.nn.Conv2d(6, 16, 5),
+      torch.nn.MaxPool2d(2, 2),
+      torch.nn.ReLU(True)
+    )
+    self.classifier = torch.nn.Sequential(
+      torch.nn.Linear(16 * 5 * 5, 120),
+      torch.nn.ReLU(),
+      torch.nn.Linear(120, 60),
+      torch.nn.ReLU(),
+      torch.nn.Linear(60, 2),
+      torch.nn.Softmax(1)
+    )
+
+  def forward(self, x):
+    with open("debug.csv",'w',newline = '') as csvfile:
+      csvwriter = csv.writer(csvfile,)
+      csvwriter.writerow( [torch.cat([training_data[i][0]for i in range(len(training_data))]).shape]) 
+    x = self.encoder(x)
+    x = x.view(-1, 16 * 5* 5)
+    x = self.classifier(x)
+    return x
+
+# Return an instance of Net.
+def digit_net(): return Net()
+# Download training data from open datasets.
+train_dict = np.load(os.path.join("..","..","hand-drawn-shapes-dataset","processing","classify","pickles","train.pickle"),allow_pickle = True)
+test_dict = np.load(os.path.join("..","..","hand-drawn-shapes-dataset","processing","classify","pickles","test.pickle"),allow_pickle = True)
+# validate_dict = np.load(os.path.join("..","hand-drawn-shapes-dataset","processing","classify","pickles","val.pickle"),allow_pickle = True)
+
+def generate_shape_set(operation):
+        # input between 1-2
+    if operation=="same":
+        n1 = random.choice([1,2]) # 0 means other, 1 means elipse, 2 means triangle and 3 means rectangle
+        n2 = random.choice([1,2])
+        return (n1,n1,n2,n2)
+    elif operation == "dif":
+        n1 = random.choice([1,2])
+        n2 = random.choice([1,2])
+        return (n1,3-n1,n2,3-n2)
+    print("operation invalid")
+    return None
+
+test_shape= [[] for i in range(4)]
+for img, label in zip(test_dict["test_data"],test_dict["test_labels"]):
+    test_shape[label]+=[torch.from_numpy(img.reshape(70, 70)).float()]
+train_shape= [[] for i in range(4)]
+for img, label in zip(train_dict["train_data"],train_dict["train_labels"]):
+    train_shape[label]+=[torch.from_numpy(img.reshape(70, 70)).float()]   
+def generate_train_data_point(shapes):
+    data_point = [random.choice(train_shape[shapes[i]])[None,:,:] for i in range(3)]
+    return data_point+[shapes[3]-1]+list(shapes) # adjust naming of label from 1/2 to 0/1
+
+def generate_test_data_point(shapes):
+    data_point = [random.choice(test_shape[shapes[i]])[None,:,:] for i in range(3)]
+    return data_point+[shapes[3]-1]+list(shapes)
+
+
+training_data=[]
+for i in range(1000):
+    operation = random.choice(["same","dif"]) # decide if each row has the same shape or a different shape
+    shapes = generate_shape_set(operation)
+    training_data += [generate_train_data_point(shapes)]
+
+test_data=[]
+for i in range(50):
+    operation = random.choice(["same","dif"])
+    shapes = generate_shape_set(operation)
+    test_data += [generate_test_data_point(shapes)]
+
+
+# MNIST images for the train set.
+def mnist_images_train(num):
+    return torch.cat([training_data[i][int(num)] for i in range(len(training_data))])[:,None,:,:]
+# MNIST images for the test set.
+def mnist_images_test(num): 
+    # currently num is passed as float
+    return torch.cat([test_data[i][int(num)] for i in range(len(test_data))])[:,None,:,:]
+ 
+# Observed atoms for training.
+def mnist_labels_train():
+    shape_dict = {0:"circle",1:"triangle"}
+    # We join the two halves (top and bottom) of MNIST and join them together to get
+    # two digits side by side. The labels are atoms encoding the sum of the two digits.
+    labels = [training_data[i][3] for i in range(len(training_data))]
+    # return [["figure(2,"+shape_dict[training_data[i][6]-1]+")"] for i in range(len(training_data))]
+    return [["shape("+shape_dict[num]+")"] for num in labels]
+# keep labels for test data
+import csv
+def note_label_for_test(test_data):
+  with open("operation_label.csv",'w',newline = '') as csvfile:
+    csvwriter = csv.writer(csvfile)
+    for i in range(len(test_data)):
+      csvwriter.writerow([test_data[i][3]]) #last num, operation
+note_label_for_test(test_data)
+
+#end.
+
+% Data of the first digit.
+input(0) ~ test(@mnist_images_test(0)), train(@mnist_images_train(0)).
+% Data of the second digit.
+input(1) ~ test(@mnist_images_test(1)), train(@mnist_images_train(1)).
+% Data of the third digit.
+input(2) ~ test(@mnist_images_test(2)), train(@mnist_images_train(2)).
+
+% use Adam as optimizer
+% and a learning rate of 0.001.
+% each image differs in the dimension of num_obj, shape and pattern. This can be extended to 3x3 as well.
+?::figure(X, {circle,triangle}) as @digit_net with optim = "Adam", lr = 0.001 :- input(X).
+
+
+shape_same :- figure(0,X),figure(1,Y), X=Y.
+
+shape(circle) :- figure(2,circle),shape_same.
+shape(circle) :- figure(2,triangle),not shape_same.
+shape(triangle) :- figure(2,triangle),shape_same.
+shape(triangle) :- figure(2,circle),not shape_same.
+
+#learn @mnist_labels_train, lr = 1., niters = 5, alg = "lagrange", batch = 50.
+#semantics maxent.
+% Ask for the probability of all groundings of shape(L).
+#query shape(L).
