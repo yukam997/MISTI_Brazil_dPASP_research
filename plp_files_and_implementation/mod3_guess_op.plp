@@ -52,8 +52,7 @@ test_data_atoms = torchvision.datasets.MNIST(
     download=True,
     transform=torchvision.transforms.ToTensor(),
 )
-def generate_mod_set(operation):
-        # input between 0-2
+def generate_mod_set(operation): # what the operation should be (sum or dif), outputs 6 numbers where the result after applying the operation on each pair is the same.
     if operation=="sum":
         tot = random.choice([0,1,2])
         n1 = random.choice([0,1,2])
@@ -103,12 +102,9 @@ def mnist_images_train(num):
     return torch.cat([training_data[i][int(num)]for i in range(len(training_data))])[:,None,:,:]
 # MNIST images for the test set.
 def mnist_images_test(num): 
-    # currently num is passed as float
     return torch.cat([test_data[i][int(num)] for i in range(len(test_data))])[:,None,:,:]
 # Observed atoms for training.
 def mnist_labels_train():
-    # We join the two halves (top and bottom) of MNIST and join them together to get
-    # two digits side by side. The labels are atoms encoding the sum of the two digits.
     labels = [(training_data[i][-2], training_data[i][-1]) for i in range(len(training_data))]
     return [[f"last_num({num})",f"equal("+ op +")"] for num,op in labels]
 
@@ -137,23 +133,22 @@ input(4) ~ test(@mnist_images_test(4)), train(@mnist_images_train(4)).
 % Neural annotated disjunction over each digit from 0 to 9; use Adam as optimizer
 % and a learning rate of 0.001.
 ?::digit(X, {0..9}) as @digit_net with optim = "Adam", lr = 0.001 :- input(X).
-% The sum.
 
 sum1(X) :- digit(0, A), digit(1, B), X = A+B.
 sum2(Y) :- digit(2, A), digit(3, B), Y = A+B.
-equal(sum) :- sum1(X),sum2(Y),X\3=Y\3.
+equal(sum) :- sum1(X),sum2(Y),X\3=Y\3. % This is true if the sum of the first two pairs is equal mod 3.
 
 dif1(X) :- digit(0, A), digit(1, B), X = A-B.
 dif2(Y) :- digit(2, A), digit(3, B), Y = A-B.
-equal(dif):- dif1(X),dif2(Y),X\3=Y\3.
+equal(dif):- dif1(X),dif2(Y),X\3=Y\3. % This is true if the difference of the first two pairs is equal mod 3.
 
 
 sat :- equal(sum).
 sat :- equal(dif).
-last_num(L):- equal(sum),sum1(X),digit(4,C),S=X-C,L=S\3.
+last_num(L):- equal(sum),sum1(X),digit(4,C),S=X-C,L=S\3. %what the last number is if the sum of the first two pairs is the same.
 last_num(L):- equal(dif),dif1(X),digit(4,C),S=C-X,L=S\3.
-% Learn the parameters of the program from the "sum(X)" atoms.
+
 #learn @mnist_labels_train, lr = 1., niters = 5, alg = "lagrange", batch = 50.
 #semantics maxent.
-% Ask for the probability of all groundings of last_num(L).
-#query last_num(L)|sat.
+% Ask for the probability of all groundings of last_num(L) given that either the sum of the pairs is equal, or the difference of the pairs is equal (i.e. sat is true).
+#query last_num(L)|sat. 
