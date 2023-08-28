@@ -5,7 +5,6 @@ Explanation of folders/files in root directory (plp_files_and_implementation and
 - useful_python_code: general code to help make neural networks.
 - pasp_examples: examples from dpasp tutorial that helped me write my plp files.
 - model.pth: example of how to save models to use in pretrained____.plp files
-- 
 
 ## Types of Experiments
 Each task has several variations regarding the task, or the input to the algorithm. Some variations are just for the pure neural network approach, while other variations are just for the dPASP approach.
